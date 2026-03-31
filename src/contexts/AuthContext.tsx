@@ -23,6 +23,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function normalizeSupabaseError(error: unknown) {
+  if (!error) return null;
+
+  if (error instanceof TypeError && error.message === 'Failed to fetch') {
+    return new Error('Unable to reach Supabase. Check your internet connection and try again.');
+  }
+
+  if (error instanceof Error) {
+    return error;
+  }
+
+  return new Error('Something went wrong. Please try again.');
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -68,20 +82,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, displayName?: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { display_name: displayName },
-      },
-    });
-    return { error: error as Error | null };
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { display_name: displayName },
+        },
+      });
+      return { error: normalizeSupabaseError(error) };
+    } catch (error) {
+      return { error: normalizeSupabaseError(error) };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return { error: normalizeSupabaseError(error) };
+    } catch (error) {
+      return { error: normalizeSupabaseError(error) };
+    }
   };
 
   const signOut = async () => {
