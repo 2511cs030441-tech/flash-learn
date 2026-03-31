@@ -12,20 +12,8 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes("node_modules")) return;
-          if (id.includes("react") || id.includes("react-dom") || id.includes("react-router-dom")) return "vendor-react";
-          if (id.includes("framer-motion")) return "vendor-motion";
-          if (id.includes("@supabase")) return "vendor-supabase";
-          if (id.includes("recharts")) return "vendor-charts";
-          return "vendor";
-        },
-      },
-    },
-  },
+  // Remove manual chunk splitting to avoid runtime circular dependency issues in the React vendor build.
+  build: {},
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
